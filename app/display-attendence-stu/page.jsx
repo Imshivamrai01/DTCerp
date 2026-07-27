@@ -1,7 +1,7 @@
 "use client";
 import dynamic from 'next/dynamic';
 
-const Component = dynamic(() => import('@/pages/Students/StudentList'), { ssr: false });
+const Component = dynamic(() => import('@/views/Students/StudentList'), { ssr: false });
 
 export default function Page() {
   return <Component />;
