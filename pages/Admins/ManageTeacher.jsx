@@ -313,13 +313,15 @@ const ManageTeacher = () => {
         .then((res) => {
           console.log(res);
           if (res.data.success) {
-            toast.success("Deleted successfully");\n      setIsSubmitting(false);
+            toast.success("Deleted successfully");
+            setIsSubmitting(false);
             fetchAllUser();
           }
         })
         .catch((error) => {
           console.log(error);
-          toast.error(error.response.data.message);\n      setIsSubmitting(false);
+          toast.error(error.response.data.message);
+          setIsSubmitting(false);
           setLoading(false);
         })
         .finally(() => {
@@ -362,7 +364,8 @@ const ManageTeacher = () => {
     if (file) {
       setAvatar(file);
     } else {
-      toast.error("Something Went Wrong !");\n      setIsSubmitting(false);
+      toast.error("Something Went Wrong !");
+      setIsSubmitting(false);
     }
   };
 
