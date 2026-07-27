@@ -102,7 +102,8 @@ const ManageTeacher = () => {
                 formData
               )
               .then((res) => {
-                setIsSubmitting(true);\n      await axios.put(
+                setIsSubmitting(true);
+                await axios.put(
                   `/api/user/${
                     updateUserData._id
                   }`,
@@ -111,7 +112,8 @@ const ManageTeacher = () => {
                 console.log(res);
                 if (res.data.success) {
                   setBtnDisable(false);
-                  toast.success("User Updated Successfully !");\n      setIsSubmitting(false);
+                  toast.success("User Updated Successfully !");
+                  setIsSubmitting(false);
                   setRole("");
                   setName("");
                   setEmail("");
@@ -127,7 +129,8 @@ const ManageTeacher = () => {
               })
               .catch((error) => {
                 console.log(error);
-                toast.error(error.response.data.message);\n      setIsSubmitting(false);
+                toast.error(error.response.data.message);
+                setIsSubmitting(false);
                 setBtnDisable(false);
               })
               .finally(() => {
@@ -141,14 +144,16 @@ const ManageTeacher = () => {
               .then((res) => {
                 console.log(res);
                 if (res.data.success) {
-                  setIsSubmitting(true);\n      await axios.put(
+                  setIsSubmitting(true);
+                  await axios.put(
                     `/api/user/${
                       res.data.data._id
                     }`,
                     data
                   );
                   setBtnDisable(false);
-                  toast.success("Teacher Added Successfully !");\n      setIsSubmitting(false);
+                  toast.success("Teacher Added Successfully !");
+                  setIsSubmitting(false);
                   setRole("");
                   setName("");
                   setEmail("");
@@ -164,7 +169,8 @@ const ManageTeacher = () => {
               })
               .catch((error) => {
                 console.log(error);
-                toast.error(error.response.data.message);\n      setIsSubmitting(false);
+                toast.error(error.response.data.message);
+                setIsSubmitting(false);
                 setBtnDisable(false);
               })
               .finally(() => {
@@ -196,7 +202,8 @@ const ManageTeacher = () => {
         })
         .catch((error) => {
           console.log(error);
-          toast.error(error.response.data.message);\n      setIsSubmitting(false);
+          toast.error(error.response.data.message);
+          setIsSubmitting(false);
           setLoading(false);
         })
         .finally(() => {
