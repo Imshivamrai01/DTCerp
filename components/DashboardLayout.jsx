@@ -5,7 +5,7 @@ import { AiFillCloseCircle, AiOutlineMenu } from "react-icons/ai";
 import axios from "axios";
 
 
-import annyang from "annyang";
+const annyang = null;
 import logo from "@/assets/dusk.jpg";
 
 

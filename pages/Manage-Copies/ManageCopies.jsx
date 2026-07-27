@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ColorRing } from "react-loader-spinner";
 import axios from "axios";
 import { toast } from "react-toastify";
-import annyang from "annyang";
+const annyang = null;
 import { DownloadTableExcel } from "react-export-table-to-excel";
 import { RiFileExcel2Fill } from "react-icons/ri";
 import Fuse from "fuse.js";
