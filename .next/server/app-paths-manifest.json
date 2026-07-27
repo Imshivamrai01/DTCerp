@@ -1,15 +1,11 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/manage-students/page": "app/manage-students/page.js",
   "/parent/dashboard/page": "app/parent/dashboard/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/manage-admin/page": "app/manage-admin/page.js",
   "/api/coordinator-assignment/teacher/route": "app/api/coordinator-assignment/teacher/route.js",
   "/api/user/me/[id]/route": "app/api/user/me/[id]/route.js",
-  "/api/student/filter/route": "app/api/student/filter/route.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/api/coordinator-assignment/all/route": "app/api/coordinator-assignment/all/route.js",
-  "/api/student/all/route": "app/api/student/all/route.js",
-  "/api/home/route": "app/api/home/route.js",
-  "/api/remark/[id]/route": "app/api/remark/[id]/route.js",
-  "/api/remark/route": "app/api/remark/route.js",
-  "/api/remark/by/route": "app/api/remark/by/route.js"
+  "/api/parent/my-students/route": "app/api/parent/my-students/route.js",
+  "/api/parent/attendance/route": "app/api/parent/attendance/route.js",
+  "/api/homework/class/route": "app/api/homework/class/route.js"
 }
