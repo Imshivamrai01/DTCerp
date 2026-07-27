@@ -62,7 +62,8 @@ const ManageTeacher = () => {
       const missingFieldsMsg = `Please input all the following fields: ${missingFields.join(
         ", "
       )}`;
-      toast.error(missingFieldsMsg);\n      setIsSubmitting(false);
+      toast.error(missingFieldsMsg);
+      setIsSubmitting(false);
       setBtnDisable(false);
       return;
     }
