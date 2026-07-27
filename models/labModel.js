@@ -39,4 +39,4 @@ type: String,
 
 // Create and Export Model
 const Lab = mongoose.model('Lab', labSchema);
-module.exports = Lab;
+module.exports = mongoose.models.Lab || mongoose.model("Lab", labSchema);
