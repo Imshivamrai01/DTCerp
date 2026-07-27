@@ -1,0 +1,2 @@
+CREATE ATTENDANCE POST BODY: {"teacher":"6a62f8de6311a58c48e37e1d","name":"farhan","email":"abcd@gmail.com","status":"Present","date":"2026-07-26"}
+CREATE ATTENDANCE POST BODY: {"teacher":"6a62f8de6311a58c48e37e1d","name":"farhan","email":"abcd@gmail.com","status":"Present","date":"2026-07-27"}

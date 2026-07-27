@@ -1,0 +1,7 @@
+{
+  "/assign-classes/page": "app/assign-classes/page.js",
+  "/manage-students/page": "app/manage-students/page.js",
+  "/parent/profile/page": "app/parent/profile/page.js",
+  "/parent/dashboard/page": "app/parent/dashboard/page.js",
+  "/parent/homework/page": "app/parent/homework/page.js"
+}
