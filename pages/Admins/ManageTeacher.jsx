@@ -101,7 +101,7 @@ const ManageTeacher = () => {
                 }`,
                 formData
               )
-              .then((res) => {
+              .then(async (res) => {
                 setIsSubmitting(true);
                 await axios.put(
                   `/api/user/${
@@ -141,7 +141,7 @@ const ManageTeacher = () => {
                 `/api/user/register`,
                 formData
               )
-              .then((res) => {
+              .then(async (res) => {
                 console.log(res);
                 if (res.data.success) {
                   setIsSubmitting(true);
