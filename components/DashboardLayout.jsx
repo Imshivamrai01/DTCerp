@@ -59,7 +59,13 @@ const DashboardLayout = ({ children }) => {
 
   const hasAssignedClass = classTeacher.class && classTeacher.section;
   const hasRole = (requiredRole) => {
-    return role === requiredRole || secondaryRole === requiredRole;
+    const r = (role || "").trim().toLowerCase();
+    const sr = (secondaryRole || "").trim().toLowerCase();
+    const req = (requiredRole || "").trim().toLowerCase();
+    if (req === "admin") {
+      return r.includes("admin") || sr.includes("admin");
+    }
+    return r === req || sr === req;
   };
 
   // console.log(name);
@@ -91,9 +97,12 @@ const DashboardLayout = ({ children }) => {
         // ✅ Save entire user object
         localStorage.setItem("User", JSON.stringify(updatedUser));
 
+        const rawRole = (updatedUser.role || "").trim();
+        const formattedRole = rawRole.toLowerCase().includes("admin") ? "Admin" : rawRole;
+
         // ✅ Set each individual field as needed
         localStorage.setItem("currentUser", "true");
-        localStorage.setItem("role", updatedUser.role || "");
+        localStorage.setItem("role", formattedRole);
         localStorage.setItem("secondaryRole", updatedUser.secondaryRole || "");
         localStorage.setItem("email", updatedUser.email || "");
         localStorage.setItem("class", updatedUser.class || "");
@@ -126,6 +135,11 @@ const DashboardLayout = ({ children }) => {
         console.log("✅ User data updated in localStorage on reload");
       } catch (err) {
         console.error("❌ Failed to refresh user data", err);
+        if (err?.response?.status === 404) {
+          toast.error("Session expired or user not found. Please log in again.");
+          localStorage.clear();
+          router.push("/login");
+        }
       }
     };
 
@@ -200,6 +214,10 @@ const DashboardLayout = ({ children }) => {
         }
       } catch (error) {
         console.error("Error checking user status:", error);
+        if (error?.response?.status === 404) {
+          localStorage.clear();
+          router.push("/login");
+        }
       }
     };
 

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import Student from "@/models/studentModel";
 import User from "@/models/userModel";
+import TeacherAttendance from "@/models/teacherAttendence";
+import Attendance from "@/models/studentAttendenceModel";
 
 export const dynamic = "force-dynamic";
 
@@ -21,26 +23,81 @@ export async function GET(req) {
     let allTeachers = 0;
     let allAdmins = 0;
     let allCoordinators = 0;
+    let teacherAttendanceCount = 0;
+    let studentAttendanceCount = 0;
 
-    if (role === "Admin") {
+    const normalizedRole = (role || "").trim().toLowerCase();
+    const isAdminRole = ["admin", "super admin", "superadmin"].includes(normalizedRole) || normalizedRole.includes("admin");
+
+    if (isAdminRole) {
       allStudents = await Student.countDocuments({ isDeleted: { $ne: true } });
-      allTeachers = await User.countDocuments({ $or: [{ role: "Teacher" }, { secondaryRole: "Teacher" }] });
-      allAdmins = await User.countDocuments({ $or: [{ role: "Admin" }, { secondaryRole: "Admin" }] });
+
+      allTeachers = await User.countDocuments({
+        $or: [
+          { role: { $regex: "teacher", $options: "i" } },
+          { secondaryRole: { $regex: "teacher", $options: "i" } }
+        ]
+      });
+
+      allAdmins = await User.countDocuments({
+        $or: [
+          { role: { $regex: "admin", $options: "i" } },
+          { secondaryRole: { $regex: "admin", $options: "i" } }
+        ]
+      });
+
       allCoordinators = await User.countDocuments({
         $or: [
-          { role: { $in: ["Senior Coordinator", "Junior Coordinator"] } },
-          { secondaryRole: { $in: ["Senior Coordinator", "Junior Coordinator"] } },
-        ],
+          { role: { $regex: "coordinator", $options: "i" } },
+          { secondaryRole: { $regex: "coordinator", $options: "i" } }
+        ]
       });
-    } else if (role === "Teacher") {
-      allStudents = await Student.countDocuments({ studentClass, studentDivision });
+
+      // Attendance for today
+      try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        teacherAttendanceCount = await TeacherAttendance.countDocuments({
+          date: { $gte: startOfDay, $lte: endOfDay },
+          status: "Present"
+        });
+      } catch (attErr) {
+        console.error("Error fetching teacher attendance count:", attErr);
+      }
+
+      try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        studentAttendanceCount = await Attendance.countDocuments({
+          date: { $gte: startOfDay, $lte: endOfDay },
+          status: "Present"
+        });
+      } catch (attErr) {
+        console.error("Error fetching student attendance count:", attErr);
+      }
+    } else if (normalizedRole === "teacher") {
+      const filter = { isDeleted: { $ne: true } };
+      if (studentClass) filter.studentClass = studentClass;
+      if (studentDivision) filter.studentDivision = studentDivision;
+      allStudents = await Student.countDocuments(filter);
     }
 
-    if (allStudents === 0) {
-      return NextResponse.json({ message: "No Student Found!", success: false });
-    }
-
-    return NextResponse.json({ students: allStudents, teachers: allTeachers, admins: allAdmins, coordinators: allCoordinators, success: true });
+    return NextResponse.json({
+      students: allStudents,
+      teachers: allTeachers,
+      admins: allAdmins,
+      coordinators: allCoordinators,
+      teacherAttendance: teacherAttendanceCount,
+      studentAttendance: studentAttendanceCount,
+      testKey: "123",
+      success: true
+    });
   } catch (error) {
     console.error("DataCount API Error:", error);
     return NextResponse.json({ message: error.message || "Internal Server Error", success: false }, { status: 500 });

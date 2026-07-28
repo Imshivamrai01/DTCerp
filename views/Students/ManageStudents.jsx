@@ -111,6 +111,111 @@ const ManageStudents = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [allStudentData, setAllStudentData] = useState([]);
+  const [excelModalOpen, setExcelModalOpen] = useState(false);
+  const [excelData, setExcelData] = useState([]);
+  const [isExcelUploading, setIsExcelUploading] = useState(false);
+
+  const loadXLSXLib = () => {
+    return new Promise((resolve, reject) => {
+      if (window.XLSX) return resolve(window.XLSX);
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+      script.onload = () => resolve(window.XLSX);
+      script.onerror = () => reject(new Error("Failed to load Excel library"));
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleExcelFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const XLSX = await loadXLSXLib();
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws, { defval: "" });
+        if (!data || data.length === 0) {
+          toast.error("Excel sheet is empty!");
+          return;
+        }
+        setExcelData(data);
+        setExcelModalOpen(true);
+      };
+      reader.readAsBinaryString(file);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error reading Excel file!");
+    }
+  };
+
+  const handleConfirmExcelUpload = async () => {
+    if (excelData.length === 0) return;
+    try {
+      setIsExcelUploading(true);
+      const res = await axios.post("/api/student/bulk-upload", { students: excelData });
+      if (res.data.success) {
+        toast.success(res.data.message || "Students imported successfully!");
+        setExcelModalOpen(false);
+        setExcelData([]);
+        fetchAllUser();
+      } else {
+        toast.error(res.data.message || "Failed to import students!");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Bulk upload failed!");
+    } finally {
+      setIsExcelUploading(false);
+    }
+  };
+
+  const downloadSampleTemplate = async () => {
+    try {
+      const XLSX = await loadXLSXLib();
+      const sample = [
+        {
+          "Student Name": "Aarav Sharma",
+          "Roll No": "1",
+          "Class": "1",
+          "Section": "A",
+          "Admission No": "1001",
+          "Father Name": "Rajesh Sharma",
+          "Mother Name": "Sunita Sharma",
+          "Contact Number": "9876543210",
+          "Gender": "Male",
+          "DOB": "2015-05-15",
+          "Address": "Gorakhpur",
+          "City": "Gorakhpur"
+        },
+        {
+          "Student Name": "Ananya Gupta",
+          "Roll No": "2",
+          "Class": "1",
+          "Section": "A",
+          "Admission No": "1002",
+          "Father Name": "Sanjay Gupta",
+          "Mother Name": "Pooja Gupta",
+          "Contact Number": "9876543211",
+          "Gender": "Female",
+          "DOB": "2015-08-20",
+          "Address": "Gorakhpur",
+          "City": "Gorakhpur"
+        }
+      ];
+      const ws = XLSX.utils.json_to_sheet(sample);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Students_Template");
+      XLSX.writeFile(wb, "Student_Import_Template.xlsx");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to download sample template");
+    }
+  };
 
   const tableRef = useRef(null);
 
@@ -345,38 +450,40 @@ const ManageStudents = () => {
 
   const fetchAllUser = () => {
     setLoading(true);
-    if (activeClass == "All") {
+    if (activeClass?.toLowerCase() === "all") {
       setActiveDivision("All");
     }
     try {
       axios
         .get(
-          `${
-            ""
-          }/api/student/filter?studentClass=${activeClass}&studentSection=${activeDivision}&page=${currentPage}`
+          `/api/student/filter?studentClass=${encodeURIComponent(activeClass)}&studentSection=${encodeURIComponent(activeDivision)}&page=${currentPage}`
         )
         .then((res) => {
           console.log(res);
           if (res.data.success) {
             setLoading(false);
-            // Filter out students where isDeleted is true
-            const filteredData = res.data.data.filter(
+            const filteredData = (res.data.data || []).filter(
               (student) => !student.isDeleted
             );
             const sortedData = filteredData.sort((a, b) => {
-              const rollA = parseInt(a.rollNumber) || 0;
-              const rollB = parseInt(b.rollNumber) || 0;
-              return rollA - rollB;
+              const rollA = parseInt(String(a.rollNumber || "").replace(/\D/g, ""), 10) || 0;
+              const rollB = parseInt(String(b.rollNumber || "").replace(/\D/g, ""), 10) || 0;
+              if (rollA !== rollB) return rollA - rollB;
+
+              const admA = parseInt(String(a.admissionNo || "").replace(/\D/g, ""), 10) || 0;
+              const admB = parseInt(String(b.admissionNo || "").replace(/\D/g, ""), 10) || 0;
+              if (admA !== admB) return admA - admB;
+
+              return (a.name || "").localeCompare(b.name || "");
             });
             setUserData(sortedData);
-            setTotalPages(res.data.count);
+            setTotalPages(res.data.count || 0);
           }
         })
         .catch((error) => {
           console.log(error);
-          toast.error(error.response.data.message);
-      setIsSubmitting(false);
-          setUserData(null);
+          setIsSubmitting(false);
+          setUserData([]);
           setLoading(false);
           setTotalPages(0);
         })
@@ -385,9 +492,9 @@ const ManageStudents = () => {
         });
     } catch (error) {
       console.log(error);
-      setUserData(null);
+      setUserData([]);
       setLoading(false);
-      setTotalPages(1);
+      setTotalPages(0);
     }
   };
   const getLastRoll = () => {
@@ -906,16 +1013,41 @@ const ManageStudents = () => {
   return (
     <>
       {/* <Toaster draggable={true} /> */}
-      <div className="px-4 py-6 flex justify-between items-center">
-        <label htmlFor="checkbox" className="mr-4 font-semibold">
-          Show Form
-        </label>
-        <input
-          type="checkbox"
-          className="toggle"
-          checked={formToggle}
-          onChange={() => setFormToggle(!formToggle)}
-        />
+      <div className="px-4 py-6 flex justify-between items-center flex-wrap gap-4 bg-gray-50/50 rounded-xl mb-4 border">
+        <div className="flex items-center gap-3">
+          <label htmlFor="excel-upload" className="btn btn-success text-white btn-sm gap-2 cursor-pointer shadow-sm">
+            <RiFileExcel2Fill className="text-lg" />
+            Upload Excel Sheet
+          </label>
+          <input
+            id="excel-upload"
+            type="file"
+            accept=".xlsx, .xls, .csv"
+            className="hidden"
+            onChange={handleExcelFileSelect}
+          />
+
+          <button
+            type="button"
+            onClick={downloadSampleTemplate}
+            className="btn btn-outline btn-sm gap-2 text-xs"
+            title="Download Excel Template Format"
+          >
+            📥 Download Excel Format
+          </button>
+        </div>
+
+        <div className="flex items-center">
+          <label htmlFor="checkbox" className="mr-4 font-semibold">
+            Show Form
+          </label>
+          <input
+            type="checkbox"
+            className="toggle"
+            checked={formToggle}
+            onChange={() => setFormToggle(!formToggle)}
+          />
+        </div>
       </div>
       {formToggle && (
         <>
@@ -2503,8 +2635,8 @@ const ManageStudents = () => {
                 onChange={(e) => setActiveClass(e.target.value)}
               >
                 <option value="all">All</option>
-                <option value="L.K.G">L.K.G</option>
-                <option value="U.K.G">U.K.G</option>
+                <option value="LKG">LKG</option>
+                <option value="UKG">UKG</option>
                 <option value="Nursery">Nursery</option>
                 {Array.from({ length: 12 }, (_, i) => (
                   <option key={i + 1} value={`${i + 1}`}>{`Class ${
@@ -2550,8 +2682,8 @@ const ManageStudents = () => {
                 All
               </button>
               {[
-                "L.K.G",
-                "U.K.G",
+                "LKG",
+                "UKG",
                 "Nursery",
                 ...Array.from({ length: 12 }, (_, i) => `${i + 1}`),
               ].map((cls) => (
@@ -2891,6 +3023,86 @@ const ManageStudents = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* Excel Preview Modal */}
+      {excelModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border">
+            <h3 className="font-bold text-xl text-emerald-700 flex items-center gap-2">
+              <RiFileExcel2Fill className="text-2xl" />
+              Excel Sheet Preview ({excelData.length} Students Found)
+            </h3>
+            <p className="py-2 text-xs text-gray-500">
+              Please review the student details extracted from your Excel file before importing them directly into MongoDB.
+            </p>
+
+            <div className="overflow-x-auto max-h-96 my-4 border rounded-xl">
+              <table className="table table-compact w-full text-xs">
+                <thead>
+                  <tr className="bg-emerald-100 text-emerald-900">
+                    <th className="py-3 px-2">#</th>
+                    <th className="py-3 px-2">Student Name</th>
+                    <th className="py-3 px-2">Roll No</th>
+                    <th className="py-3 px-2">Class</th>
+                    <th className="py-3 px-2">Section</th>
+                    <th className="py-3 px-2">Admission No</th>
+                    <th className="py-3 px-2">Father Name</th>
+                    <th className="py-3 px-2">Contact</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {excelData.slice(0, 50).map((row, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="py-2 px-2 font-mono text-gray-400">{idx + 1}</td>
+                      <td className="py-2 px-2 font-semibold text-gray-800">{row["Student Name"] || row["Name"] || row.name || "-"}</td>
+                      <td className="py-2 px-2">{row["Roll No"] || row["Roll Number"] || row.rollNumber || (idx + 1)}</td>
+                      <td className="py-2 px-2">{row["Class"] || row["Student Class"] || row.studentClass || "1"}</td>
+                      <td className="py-2 px-2">{row["Section"] || row["Student Section"] || row.studentSection || "A"}</td>
+                      <td className="py-2 px-2 font-mono">{row["Admission No"] || row["Admission Number"] || row.admissionNo || "Auto"}</td>
+                      <td className="py-2 px-2">{row["Father Name"] || row["Fathers Name"] || row.fathersName || "-"}</td>
+                      <td className="py-2 px-2">{row["Contact Number"] || row["Contact"] || row["Phone"] || row.contactNumber || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {excelData.length > 50 && (
+                <p className="text-center text-xs py-2 bg-gray-50 text-gray-500 font-medium">
+                  Showing first 50 of {excelData.length} records...
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={isExcelUploading}
+                onClick={() => {
+                  setExcelModalOpen(false);
+                  setExcelData([]);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-success text-white btn-sm gap-2"
+                disabled={isExcelUploading}
+                onClick={handleConfirmExcelUpload}
+              >
+                {isExcelUploading ? (
+                  <>
+                    <span className="loading loading-spinner loading-xs"></span>
+                    Saving to MongoDB...
+                  </>
+                ) : (
+                  `Upload ${excelData.length} Students to MongoDB`
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

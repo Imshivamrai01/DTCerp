@@ -44,23 +44,27 @@ const Login = () => {
       const res = await axios.post("/api/auth/login", data);
 
       if (res.data.success) {
-        if (!res.data.isActive) {
+        if (res.data.isActive === false) {
           toast.error("This user is currently In-Active", { id: "wede" });
           setBtnDisable(false);
           return;
         }
 
+        const rawRole = (res.data.role || "").trim();
+        const roleLower = rawRole.toLowerCase();
+        const formattedRole = roleLower.includes("admin") ? "Admin" : (roleLower === "parent" ? "Parent" : rawRole);
+
         // Save data to localStorage exactly like before
         localStorage.setItem("User", JSON.stringify(res.data));
         localStorage.setItem("currentUser", "true");
-        localStorage.setItem("role", res.data.role);
+        localStorage.setItem("role", formattedRole);
         localStorage.setItem("secondaryRole", res.data.secondaryRole || "");
-        localStorage.setItem("email", res.data.email);
+        localStorage.setItem("email", res.data.email || "");
         localStorage.setItem("class", res.data.class || "");
         localStorage.setItem("division", res.data.division || "");
-        localStorage.setItem("id", res.data._id);
-        localStorage.setItem("name", res.data.name);
-        localStorage.setItem("avatar", res.data.avatar || "");
+        localStorage.setItem("id", res.data._id || "");
+        localStorage.setItem("name", res.data.name || "");
+        localStorage.setItem("avatar", typeof res.data.avatar === 'object' ? JSON.stringify(res.data.avatar || {}) : (res.data.avatar || ""));
         
         if (res.data.assignedClasses) {
           localStorage.setItem("assignedClasses", JSON.stringify(res.data.assignedClasses));
@@ -80,23 +84,27 @@ const Login = () => {
 
         toast.success("Logged In Successfully!");
         setCurrentUser(true);
-        if (res.data.role === "Parent") {
-          window.location.href = "/parent/dashboard";
-        } else {
-          window.location.href = "/dashboard";
-        }
+        
+        const redirectPath = formattedRole === "Parent" ? "/parent/dashboard" : "/dashboard";
+        router.push(redirectPath);
+        window.location.href = redirectPath;
+      } else {
+        toast.error(res.data.message || "Login failed");
+        setBtnDisable(false);
       }
     } catch (error) {
       console.log(error);
       toast.error(error.response?.data?.message || "Login failed");
+      setBtnDisable(false);
+    } finally {
       setBtnDisable(false);
     }
   };
 
   useEffect(() => {
     if (currentUser) {
-      const role = localStorage.getItem("role");
-      if (role === "Parent") {
+      const rawRole = (localStorage.getItem("role") || "").trim().toLowerCase();
+      if (rawRole === "parent") {
         router.push("/parent/dashboard");
       } else {
         router.push("/dashboard");

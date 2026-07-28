@@ -2,6 +2,14 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
+    id: {
+      type: String,
+      unique: true,
+      sparse: true,
+      default: function () {
+        return "usr-" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+      },
+    },
     email: {
       type: String,
       required: true,
@@ -117,5 +125,18 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+userSchema.pre("validate", function (next) {
+  if (!this.id || this.id === "" || this.id === null) {
+    this.id = "usr-" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+  }
+  if (this.rfid === "" || this.rfid === null) {
+    this.rfid = undefined;
+  }
+  if (this.firebaseUid === "" || this.firebaseUid === null) {
+    this.firebaseUid = undefined;
+  }
+  next();
+});
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);

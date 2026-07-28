@@ -141,6 +141,10 @@ const studentSchema = new mongoose.Schema(
       default: true,
     },
     feeCategory: { type: String },
+    srId: { type: String },
+    houseNo: { type: String },
+    mohalla: { type: String },
+    post: { type: String },
     isDeleted: {
       type: Boolean,
       default: false,
@@ -151,5 +155,8 @@ const studentSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+studentSchema.index({ admissionNo: 1 }, { sparse: true });
+studentSchema.index({ srId: 1 }, { sparse: true });
 
 module.exports = mongoose.models.Student || mongoose.model("Student", studentSchema);

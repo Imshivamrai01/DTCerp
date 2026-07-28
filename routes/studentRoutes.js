@@ -20,9 +20,11 @@ const {
   promoteClass,
   listGraduatedStudents,
   getNextAdmissionNumber,
+  bulkUploadStudents,
 } = require("../controllers/studentController");
 
 router.post("/register", registerStudent);
+router.post("/bulk-upload", bulkUploadStudents);
 router.put("/status/:id", updateStudentStatus);
 router.get("/all", listAllStudents);
 router.get("/search", searchStudents);

@@ -55,6 +55,12 @@ export async function POST(req) {
       data.isActive = data.isActive === 'true' || data.isActive === true;
     }
 
+    if (!data.id || data.id === "") {
+      data.id = "usr-" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+    }
+    if (!data.rfid || data.rfid === "") delete data.rfid;
+    if (!data.firebaseUid || data.firebaseUid === "") delete data.firebaseUid;
+
     const user = await User.create(data);
 
     if (!user) {

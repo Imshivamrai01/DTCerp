@@ -9,28 +9,42 @@ export async function GET(req) {
     await dbConnect();
     const { searchParams } = new URL(req.url);
 
-    const studentClass = searchParams.get("studentClass");
+    const rawClass = (searchParams.get("studentClass") || "all").trim();
+    const rawSection = (searchParams.get("studentSection") || "all").trim();
 
-    let query = { isDeleted: { $ne: true }, isActive: true };
+    const isClassAll = !rawClass || rawClass.toLowerCase() === "all";
+    const isSectionAll = !rawSection || rawSection.toLowerCase() === "all";
 
-    if (studentClass && studentClass !== "all") {
-      query.studentClass = studentClass;
+    let query = { isDeleted: { $ne: true } };
+
+    if (!isClassAll) {
+      const safeClass = rawClass.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      query.studentClass = { $regex: `^${safeClass}$`, $options: "i" };
     }
 
-    const students = await Student.find(query).sort({ name: 1 });
-    const count = students.length;
-
-    if (!students || students.length === 0) {
-      return NextResponse.json({ message: "No Students Found!", success: false }, { status: 400 });
+    if (!isSectionAll) {
+      const safeSection = rawSection.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      query.studentSection = { $regex: `^${safeSection}$`, $options: "i" };
     }
+
+    const students = await Student.find(query)
+      .collation({ locale: "en", numericOrdering: true })
+      .sort({ rollNumber: 1, admissionNo: 1, name: 1 })
+      .lean();
 
     return NextResponse.json({
-      data: students,
-      count: count,
-      success: true,
+      data: students || [],
+      count: (students || []).length,
+      success: true
     }, { status: 200 });
+
   } catch (error) {
     console.error("FilterAllStudent API Error:", error);
-    return NextResponse.json({ message: error.message || "Internal Server Error", success: false }, { status: 500 });
+    return NextResponse.json({
+      data: [],
+      count: 0,
+      message: error.message || "Internal Server Error",
+      success: false
+    }, { status: 500 });
   }
 }

@@ -1,8 +1,8 @@
 const asyncHandler = require("express-async-handler");
-const cloudinary = require("cloudinary").v2;
-
 const Student = require("../models/studentModel");
 const User = require("../models/userModel");
+const TeacherAttendance = require("../models/teacherAttendence");
+const Attendance = require("../models/studentAttendenceModel");
 
 const dataCount = asyncHandler(async (req, res) => {
   const role = req.query.role;
@@ -18,35 +18,69 @@ const dataCount = asyncHandler(async (req, res) => {
   let allTeachers = 0;
   let allAdmins = 0;
   let allCoordinators = 0;
+  let teacherAttendanceCount = 0;
+  let studentAttendanceCount = 0;
 
-  if (role === "Admin") {
- allStudents = await Student.countDocuments({ isDeleted: { $ne: true } });
+  const normalizedRole = (role || "").trim().toLowerCase();
+  const isAdminRole = ["admin", "super admin", "superadmin"].includes(normalizedRole) || normalizedRole.includes("admin");
 
-allTeachers = await User.countDocuments({
-  $or: [
-    { role: "Teacher" },
-    { secondaryRole: "Teacher" }
-  ]
-});
-   allAdmins = await User.countDocuments({
-  $or: [{ role: "Admin" }, { secondaryRole: "Admin" }]
-});
+  if (isAdminRole) {
+    allStudents = await Student.countDocuments({ isDeleted: { $ne: true } });
 
-allCoordinators = await User.countDocuments({
-  $or: [
-    { role: { $in: ["Senior Coordinator", "Junior Coordinator"] } },
-    { secondaryRole: { $in: ["Senior Coordinator", "Junior Coordinator"] } }
-  ]
-});
-  } else if (role === "Teacher") {
-    allStudents = await Student.countDocuments({
-      studentClass,
-      studentDivision,
+    allTeachers = await User.countDocuments({
+      $or: [
+        { role: { $regex: "teacher", $options: "i" } },
+        { secondaryRole: { $regex: "teacher", $options: "i" } }
+      ]
     });
-  }
 
-  if (allStudents === 0) {
-    return res.json({ message: "No Student Found!", success: false });
+    allAdmins = await User.countDocuments({
+      $or: [
+        { role: { $regex: "admin", $options: "i" } },
+        { secondaryRole: { $regex: "admin", $options: "i" } }
+      ]
+    });
+
+    allCoordinators = await User.countDocuments({
+      $or: [
+        { role: { $regex: "coordinator", $options: "i" } },
+        { secondaryRole: { $regex: "coordinator", $options: "i" } }
+      ]
+    });
+
+    // Calculate today's attendance counts
+    try {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      teacherAttendanceCount = await TeacherAttendance.countDocuments({
+        date: { $gte: startOfDay, $lte: endOfDay },
+        status: "Present"
+      });
+    } catch (attErr) {
+      console.error("Error fetching teacher attendance count:", attErr);
+    }
+
+    try {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+
+      studentAttendanceCount = await Attendance.countDocuments({
+        date: { $gte: startOfDay, $lte: endOfDay },
+        status: "Present"
+      });
+    } catch (attErr) {
+      console.error("Error fetching student attendance count:", attErr);
+    }
+  } else if (normalizedRole === "teacher") {
+    const filter = { isDeleted: { $ne: true } };
+    if (studentClass) filter.studentClass = studentClass;
+    if (studentDivision) filter.studentDivision = studentDivision;
+    allStudents = await Student.countDocuments(filter);
   }
 
   res.json({
@@ -54,9 +88,10 @@ allCoordinators = await User.countDocuments({
     teachers: allTeachers,
     admins: allAdmins,
     coordinators: allCoordinators,
+    teacherAttendance: teacherAttendanceCount,
+    studentAttendance: studentAttendanceCount,
     success: true,
   });
 });
-
 
 module.exports = { dataCount };

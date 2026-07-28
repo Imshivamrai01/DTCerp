@@ -651,7 +651,7 @@ const Home = () => {
       {!loading ? (
         <>
           <div className="grid md:grid-cols-3 gap-4 content-center">
-            {role == "Admin" ? (
+            {(role == "Admin" || role == "Super Admin" || role == "superadmin" || role == "admin") ? (
               <>
                 {" "}
                 <div className="hover:border shadow cursor-pointer w-fit  py-4 px-6">
