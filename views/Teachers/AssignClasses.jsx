@@ -292,7 +292,7 @@ const AssignClasses = () => {
       .put(
         `${
           ""
-        }/api/user/teacher/${selectedTeacherId}`,
+        }/api/user/${selectedTeacherId}`,
         data
       )
       .then((res) => {
